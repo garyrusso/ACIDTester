@@ -1,0 +1,32 @@
+<inventory xmlns="http://tax.thomsonreuters.com">
+  <meta>
+    <id>1236</id>
+    <type>inventory</type>
+    <salesItem>Airplanes</salesItem>
+    <createdAt>2014-10-07T17:14:43.120574-05:00</createdAt>
+    <updatedAt>2014-10-07T17:14:43.120574-05:00</updatedAt>
+  </meta>
+  <feed>
+    <item>
+      <name>Gulfstream Airplane</name>
+      <count>7777</count>
+      <price>749999.0</price>
+    </item>
+    <supplier>
+      <supplierName>Gulfstream Airplanes, Inc.</supplierName>
+      <address>
+        <street1>One Jet Street</street1>
+        <street2>Suite 22</street2>
+        <city>Miami</city>
+        <state>FL</state>
+        <zip>50011-1111</zip>
+      </address>
+      <phones>
+        <phone type="primary">312-111-5555</phone>
+        <phone type="secondary">312-222-5555</phone>
+        <phone type="other">312-333-5555</phone>
+      </phones>
+    </supplier>
+  </feed>
+</inventory>
+
