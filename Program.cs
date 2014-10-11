@@ -18,10 +18,12 @@ namespace acid
         private const string docRequestEndpoint           = "/document?rs:uri=";
         private const string commitTransRequestEndpoint   = "/transactions?rs:result=commit&rs:txid=";
         private const string rollbackTransRequestEndpoint = "/transactions?rs:result=rollback&rs:txid=";
+        private const string createTransRequestEndpoint   = "/transactions";
 
         static void Main(string[] args)
         {
             string action, docUri, txId;
+            string response = "";
 
             if (args == null || args.Length < 2)
             {
@@ -31,7 +33,7 @@ namespace acid
                 Console.WriteLine("  get   params: docUri, txid (optional)");
                 Console.WriteLine("  put   params: file, docUri, txid (optional)");
                 Console.WriteLine("  post  params: file, docUri, txid (optional)");
-                Console.WriteLine("  trans params: action (commit | rollback), txid");
+                Console.WriteLine("  trans params: action (create | commit | rollback), txid (not needed for create)");
             }
             else
             {
@@ -54,7 +56,7 @@ namespace acid
                             display("GET Request using: " + action + " | " + docUri);
                         }
 
-                        getRequest(docUri, txId);
+                        response = getRequest(docUri, txId);
                         break;
                     }
 
@@ -64,10 +66,7 @@ namespace acid
 
                         putPostArgs = getArgs(action, args);
 
-                        //display("GR001: using: " + putPostArgs[0] + ", " + putPostArgs[1] + ", " + putPostArgs[2] + ", " + putPostArgs[3]);
-                        //Console.ReadLine();
-
-                        putRequest(putPostArgs);
+                        response = putRequest(putPostArgs);
 
                         break;
                     }
@@ -76,8 +75,7 @@ namespace acid
                     {
                         string[] putPostArgs = getArgs(action, args);
 
-                        //postRequest(putPostArgs[0], putPostArgs[1]);
-                        Console.WriteLine("Not yet implemented");
+                        response = "Not yet implemented";
 
                         break;
                     }
@@ -86,19 +84,23 @@ namespace acid
                     {
                         string[] putPostArgs = getArgs(action, args);
 
-                        transactionRequest(putPostArgs);
+                        response = transactionRequest(putPostArgs);
 
                         break;
                     }
 
                     default:
                     {
-                        Console.WriteLine("Invalid action");
+                        response = "Invalid action";
                         break;
                     }
                 }
             }
-            //Console.ReadLine();
+
+            Console.WriteLine();
+            Console.WriteLine("Result: ");
+            Console.WriteLine();
+            Console.WriteLine(response);
         }
 
         static string[] getArgs(string action, string[] args)
@@ -141,9 +143,11 @@ namespace acid
             Console.WriteLine();
         }
 
-        static void getRequest(string docUri, string txId)
+        static string getRequest(string docUri, string txId)
         {
             string url = hostUri + docRequestEndpoint + docUri;
+
+            string response = "";
 
             if (txId.Length > 0)
                 url += "&rs:txid=" + txId;
@@ -155,20 +159,21 @@ namespace acid
             {
                 using (var wb = new WebClient())
                 {
-                    var response = wb.DownloadString(url);
-
-                    Console.WriteLine("Result: " + response);
+                    response = wb.DownloadString(url);
                 }
             }
             catch (System.Net.WebException ex)
             {
                 Console.WriteLine("Exception was thrown: " + ex.Message);
             }
+
+            return response;
         }
 
-        static void putRequest(string[] putArgs)
+        static string putRequest(string[] putArgs)
         {
             string file = "", txId = "", docUri = "", url = "";
+            string response = "";
 
             if (putArgs[0].Length > 0)
                 file = putArgs[0];
@@ -191,15 +196,11 @@ namespace acid
 
             XElement xDoc = null;
 
-            if (file.Length > 0)
-                xDoc = XElement.Load(file);
-            else
-            {
-                Console.Write("no file was specified");
-                return;
-            }
+            if (file.Length <= 0)
+                return "no file was specified";
 
-            Console.Write("xDoc: " + xDoc.ToString());
+            xDoc = XElement.Load(file);
+            response = xDoc.ToString();
 
             byte[] xmlBytes = Encoding.ASCII.GetBytes(xDoc.ToString());
 
@@ -209,31 +210,38 @@ namespace acid
                 {
                     wb.Headers[HttpRequestHeader.ContentType] = "text/xml";
 
-                    byte[] response = wb.UploadData(url, "PUT", xmlBytes);
+                    byte[] byteResponse = wb.UploadData(url, "PUT", xmlBytes);
 
-                    string resultString = Encoding.ASCII.GetString(response);
-
-                    Console.WriteLine("Result: " + resultString);
+                    //response = Encoding.ASCII.GetString(byteResponse);
                 }
             }
             catch (System.Net.WebException ex)
             {
                 Console.WriteLine("Exception was thrown: " + ex.Message);
             }
+
+            return response;
         }
 
-        static void transactionRequest(string[] transArgs)
+        static string transactionRequest(string[] transArgs)
         {
             string action = "", txId = "", url = "";
+            string response = "";
 
             if (transArgs[0].Length > 0)
                 action = transArgs[0];
 
-            if (transArgs[1].Length > 0)
+            if (transArgs[1] == null)
+            {
+                if (action == "create")
+                {
+                    url = hostUri + createTransRequestEndpoint;
+                }
+            }
+            else
+            {
                 txId = transArgs[1];
 
-            if (transArgs[1] != null)
-            {
                 if (action == "commit")
                 {
                     url = hostUri + commitTransRequestEndpoint + txId;
@@ -244,42 +252,74 @@ namespace acid
                     url = hostUri + rollbackTransRequestEndpoint + txId;
                 }
                 else
-                   Console.WriteLine("Invalid Transaction Request");
+                   response = "Invalid Transaction Request";
             }
+
+            Console.WriteLine("transactionRequest: " + action + " | url: " + url + " | txid: " + txId);
+
+            if (action == "create")
+                response = transactionCreateRequest(url);
             else
-            {
-                Console.WriteLine("Invalid Transaction Request");
-            }
+                if ((action == "commit") || (action == "rollback"))
+                    response = transactionPostRequest(url);
+                else
+                    response = "Invalid Transaction Request";
 
-            Console.WriteLine("transactionRequest: " + action + " | url: " + url);
+            return response;
+        }
 
-            string strPost = "rs:result=commit";
-            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(strPost);
+        static string transactionPostRequest(string url)
+        {
+            string strPost = "";
+            string response = "";
 
             try
             {
                 using (var wb = new WebClient())
                 {
-
                     //wb.Headers[HttpRequestHeader.ContentType] = "text/xml";
                     wb.Encoding = System.Text.Encoding.UTF8;
 
-                    var response = wb.UploadString(url, strPost);
+                    response = wb.UploadString(url, "POST", strPost);
 
                     //string resultString = Encoding.ASCII.GetString(response);
-
-                    Console.WriteLine("Result: " + response);
                 }
             }
             catch (System.Net.WebException ex)
             {
                 Console.WriteLine("Exception was thrown: " + ex.Message);
             }
+
+            return response;
         }
 
-        static void postRequest(string[] args)
+        static string transactionCreateRequest(string url)
         {
-            putRequest(args);
+            string strPost = "";
+            string response = "";
+
+            try
+            {
+                using (var wb = new WebClient())
+                {
+                    wb.Encoding = System.Text.Encoding.UTF8;
+
+                    response = wb.UploadString(url, "POST", strPost);
+                }
+            }
+            catch (System.Net.WebException ex)
+            {
+                Console.WriteLine("Exception was thrown: " + ex.Message);
+            }
+
+            return response;
+        }
+
+        static string postRequest(string[] args)
+        {
+            string response = putRequest(args);
+
+            return response;
         }
     }
 }
