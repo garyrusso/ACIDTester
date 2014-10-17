@@ -21,24 +21,24 @@ The GLM-Search code is here. [https://github.com/garyrusso/GLM-Search](https://g
 
 ####High Level Test Sequence:
 
-1. **Get Document** without transaction-id
-1. **Create New Transaction** - Establishes new transactional context that is used for subsequent requests
-1. **Update Document** using PUT Request with transaction-id
-1. Get Document **with** transaction-id
-1. Get Document **without** transaction-id
-1. Commit Transaction
-1. Get Document **without** transaction-id
+1. `Get Document without transaction-id`
+1. `Create New Transaction - Establishes new transactional context that is used for subsequent requests`
+1. `Update Document using PUT Request with transaction-id`
+1. `Get Document with transaction-id`
+1. `Get Document without transaction-id`
+1. `Commit Transaction`
+1. `Get Document without transaction-id`
 
 
 ####Test Sequence:
 
-1. acid get /inventory/123987562062413876873155783207074035544.xml
-1. acid trans create
-1. acid put C:\projects\ACIDTester\acid\InventoryAirplanes.xml /inventory/123987562062413876873155783207074035544.xml 14654627132988965180_13856553052109669213
-1. acid get /inventory/123987562062413876873155783207074035544.xml 14654627132988965180_13856553052109669213
-1. acid get /inventory/123987562062413876873155783207074035544.xml
-1. acid trans commit 14654627132988965180_13856553052109669213
-1. acid get /inventory/123987562062413876873155783207074035544.xml
+1. `acid get /inventory/123987562062413876873155783207074035544.xml`
+1. `acid trans create`
+1. `acid put C:\projects\ACIDTester\acid\InventoryAirplanes.xml /inventory/123987562062413876873155783207074035544.xml 14654627132988965180_13856553052109669213`
+1. `acid get /inventory/123987562062413876873155783207074035544.xml 14654627132988965180_13856553052109669213`
+1. `acid get /inventory/123987562062413876873155783207074035544.xml`
+1. `acid trans commit 14654627132988965180_13856553052109669213`
+1. `acid get /inventory/123987562062413876873155783207074035544.xml`
 
 
 
